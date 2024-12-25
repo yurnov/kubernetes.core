@@ -13,8 +13,8 @@ documentation: ""
 homepage: ""
 issues: https://github.com/ansible-collections/kubernetes.core/issues
 license_file: LICENSE
-namespace: kubernetes
-name: core
+namespace: test
+name: kubernetes
 readme: README.md
 repository: https://github.com/ansible-collections/kubernetes.core
 tags:

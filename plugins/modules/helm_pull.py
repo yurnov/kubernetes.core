@@ -190,7 +190,7 @@ def main():
             type="str", no_log=True, aliases=["password", "chart_repo_password"]
         ),
         pass_credentials=dict(type="bool", default=False),
-        skip_tls_certs_check=dict(type="bool", default=False),
+        skip_tls_certs_check=dict(type="bool", default=False, no_log=True),
         chart_devel=dict(type="bool"),
         untar_chart=dict(type="bool", default=False),
         destination=dict(type="path", required=True),
