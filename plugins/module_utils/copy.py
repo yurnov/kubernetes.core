@@ -280,8 +280,11 @@ class K8SCopyFromPod(K8SCopy):
         if self.files_to_copy == []:
             # Using warn method instead of passing warnings to exit_json as it is
             # deprecated in ansible-core>=2.19.0
-            self._module.warn("No file found from directory '{0}' into remote Pod.".format(
-                    self.remote_path))
+            self._module.warn(
+                "No file found from directory '{0}' into remote Pod.".format(
+                    self.remote_path
+                )
+            )
             self.module.exit_json(
                 changed=False,
             )

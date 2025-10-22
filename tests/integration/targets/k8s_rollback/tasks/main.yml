@@ -402,6 +402,10 @@
         namespace: "{{ namespace }}"
       register: result
 
+    - name: Debug result
+      debug:
+        var: result
+
     - name: Assert warning is returned for no rollout history
       assert:
         that:
