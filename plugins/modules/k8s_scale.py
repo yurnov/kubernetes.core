@@ -244,8 +244,7 @@ def execute_module(client, module):
 
     def _continue_or_exit(warn):
         if warn:
-            for w in warn:
-                module.warn(w)
+            module.warn(warn)
         if multiple_scale:
             return_attributes["results"].append({"changed": False})
         else:

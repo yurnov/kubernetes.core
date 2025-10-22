@@ -169,8 +169,7 @@ def perform_action(svc, resource):
             resource["metadata"]["name"],
         )
         if warn:
-            for w in warn:
-                module.warn(w)
+            module.warn(warn)
         result = {"changed": False}
         return result
 

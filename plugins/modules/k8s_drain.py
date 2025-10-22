@@ -441,8 +441,7 @@ class K8sDrainAnsible(object):
                     warnings.append(warn)
             result.append("{0} Pod(s) deleted from node.".format(number_pod))
         if warnings:
-            for w in warnings:
-                self._module.warn(w)
+            self._module.warn(warnings)
         return dict(result=" ".join(result))
 
     def patch_node(self, unschedulable):
