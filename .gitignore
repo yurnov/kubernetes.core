@@ -24,3 +24,8 @@ tests/integration/*-*.yml
 
 # VS Code settings
 .vscode/
+
+# Build artifacts
+collections/
+ansible_collections/
+
