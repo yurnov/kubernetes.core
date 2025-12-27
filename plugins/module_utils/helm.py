@@ -210,7 +210,7 @@ class AnsibleHelmModule(object):
         helm_version = self.get_helm_version()
         if helm_version is None:
             self.fail_json(msg="Unable to determine Helm version")
-        
+
         if (LooseVersion(helm_version) < LooseVersion("3.0.0")) or (
             LooseVersion(helm_version) >= LooseVersion("4.0.0")
         ):

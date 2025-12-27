@@ -482,7 +482,7 @@ def test_module_validate_helm_version_none(_ansible_helm_module):
 
     with pytest.raises(SystemExit):
         _ansible_helm_module.validate_helm_version()
-    
+
     _ansible_helm_module.fail_json.assert_called_once_with(
         msg="Unable to determine Helm version"
     )
