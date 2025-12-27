@@ -194,6 +194,9 @@ def main():
         supports_check_mode=True,
     )
 
+    # Validate Helm version >=3.0.0,<4.0.0
+    module.validate_helm_version()
+
     changed = False
 
     host = module.params.get("host")
