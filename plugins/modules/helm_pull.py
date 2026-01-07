@@ -216,6 +216,10 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
     For untarred charts: check if directory exists with Chart.yaml matching version
     For tarred charts: check if .tgz file exists and contains matching version
     """
+    # YAML is required for version checking
+    if not HAS_YAML:
+        return False
+    
     # Extract chart name from chart_ref (handle URLs and simple names)
     chart_name = chart_ref.split('/')[-1]
     if chart_name.endswith('.tgz'):
@@ -232,7 +236,8 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
                     chart_metadata = yaml.safe_load(f)
                     if chart_metadata.get('version') == chart_version:
                         return True
-            except Exception:
+            except (yaml.YAMLError, IOError, OSError):
+                # If we can't read or parse the file, treat as non-existent
                 pass
     else:
         # Check for .tgz file
@@ -255,7 +260,8 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
                                 if chart_metadata.get('version') == chart_version:
                                     return True
                             break
-            except Exception:
+            except (tarfile.TarError, yaml.YAMLError, IOError, OSError):
+                # If we can't read or parse the tarball, treat as non-existent
                 pass
     
     return False
