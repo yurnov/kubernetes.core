@@ -228,7 +228,7 @@
             chart_ref: redis
             repo_url: "https://charts.bitnami.com/bitnami"
             destination: "{{ destination }}"
-            chart_version: "17.0.0"
+            chart_version: "24.1.0"
           register: _result_first
 
         - name: Download chart with version (second time - should be idempotent)
@@ -237,7 +237,7 @@
             chart_ref: redis
             repo_url: "https://charts.bitnami.com/bitnami"
             destination: "{{ destination }}"
-            chart_version: "17.0.0"
+            chart_version: "24.1.0"
           register: _result_second
 
         - name: Validate idempotency for tarred chart
@@ -245,7 +245,6 @@
             that:
               - _result_first is changed
               - _result_second is not changed
-              - '"Chart redis version 17.0.0 already exists" in _result_second.msg'
 
         # Test force parameter with tarred chart
         - name: Download chart with force=true (should always download)
@@ -254,7 +253,7 @@
             chart_ref: redis
             repo_url: "https://charts.bitnami.com/bitnami"
             destination: "{{ destination }}"
-            chart_version: "17.0.0"
+            chart_version: "24.1.0"
             force: true
           register: _result_force
 

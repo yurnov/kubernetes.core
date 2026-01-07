@@ -415,10 +415,11 @@ def main():
             module.exit_json(
                 failed=False,
                 changed=False,
-                msg="Chart {0} version {1} already exists in destination directory".format(
-                    module.params.get('chart_ref'),
-                    module.params.get('chart_version')
-                ),
+                # Not sure if we want to keep this message or not, if keeping then need to be added to DOCUMENTATION too
+                # msg="Chart {0} version {1} already exists in destination directory".format(
+                #     module.params.get('chart_ref'),
+                #     module.params.get('chart_version')
+                # ),
                 command=helm_cmd_common,
                 stdout="",
                 stderr="",
