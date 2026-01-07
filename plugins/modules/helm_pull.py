@@ -252,8 +252,10 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
                 # Verify it's a valid tarball with matching version
                 with tarfile.open(chart_file, 'r:gz') as tar:
                     # Try to extract Chart.yaml to verify version
+                    # Look for Chart.yaml at the expected path: <chart-name>/Chart.yaml
+                    expected_chart_yaml = f"{chart_name}/Chart.yaml"
                     for member in tar.getmembers():
-                        if member.name.endswith('Chart.yaml'):
+                        if member.name == expected_chart_yaml:
                             f = tar.extractfile(member)
                             if f:
                                 chart_metadata = yaml.safe_load(f)
@@ -371,7 +373,6 @@ def main():
     )
     
     # Check if chart already exists (idempotency)
-    chart_exists_locally = False
     if module.params.get('chart_version') and not module.params.get('force'):
         chart_exists_locally = chart_exists(
             module.params.get('destination'),
@@ -379,17 +380,20 @@ def main():
             module.params.get('chart_version'),
             module.params.get('untar_chart')
         )
-    
-    if chart_exists_locally:
-        module.exit_json(
-            failed=False,
-            changed=False,
-            msg="Chart already exists in destination directory",
-            command=helm_cmd_common,
-            stdout="",
-            stderr="",
-            rc=0,
-        )
+        
+        if chart_exists_locally:
+            module.exit_json(
+                failed=False,
+                changed=False,
+                msg="Chart {0} version {1} already exists in destination directory".format(
+                    module.params.get('chart_ref'),
+                    module.params.get('chart_version')
+                ),
+                command=helm_cmd_common,
+                stdout="",
+                stderr="",
+                rc=0,
+            )
     
     if not module.check_mode:
         rc, out, err = module.run_helm_command(helm_cmd_common, fails_on_error=False)

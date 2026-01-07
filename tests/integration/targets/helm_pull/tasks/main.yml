@@ -245,7 +245,7 @@
             that:
               - _result_first is changed
               - _result_second is not changed
-              - _result_second.msg == "Chart already exists in destination directory"
+              - '"Chart redis version 17.0.0 already exists" in _result_second.msg'
 
         # Test force parameter with tarred chart
         - name: Download chart with force=true (should always download)
@@ -289,7 +289,7 @@
             that:
               - _result_untar_first is changed
               - _result_untar_second is not changed
-              - _result_untar_second.msg == "Chart already exists in destination directory"
+              - '"Chart postgresql version 12.0.0 already exists" in _result_untar_second.msg'
 
       vars:
         helm_path: "{{ temp_dir }}/3.8.0/linux-amd64/helm"
