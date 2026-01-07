@@ -245,8 +245,8 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
         
         if os.path.isdir(chart_dir) and os.path.isfile(chart_yaml_path):
             try:
-                with open(chart_yaml_path, 'r') as f:
-                    chart_metadata = yaml.safe_load(f)
+                with open(chart_yaml_path, 'r') as chart_file:
+                    chart_metadata = yaml.safe_load(chart_file)
                     if chart_metadata.get('version') == chart_version:
                         return True
             except (yaml.YAMLError, IOError, OSError):
@@ -255,7 +255,7 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
     else:
         # Check for .tgz file
         chart_file = os.path.join(destination, f"{chart_name}-{chart_version}.tgz")
-            
+        
         if os.path.isfile(chart_file):
             try:
                 # Verify it's a valid tarball with matching version
@@ -265,9 +265,9 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
                     expected_chart_yaml = f"{chart_name}/Chart.yaml"
                     try:
                         member = tar.getmember(expected_chart_yaml)
-                        f = tar.extractfile(member)
-                        if f:
-                            chart_metadata = yaml.safe_load(f)
+                        chart_yaml_file = tar.extractfile(member)
+                        if chart_yaml_file:
+                            chart_metadata = yaml.safe_load(chart_yaml_file)
                             if chart_metadata.get('version') == chart_version:
                                 return True
                     except KeyError:
