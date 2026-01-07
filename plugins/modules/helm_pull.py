@@ -215,9 +215,22 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
     
     For untarred charts: check if directory exists with Chart.yaml matching version
     For tarred charts: check if .tgz file exists and contains matching version
+    
+    Args:
+        destination (str): Destination directory path
+        chart_ref (str): Chart reference (name or URL)
+        chart_version (str): Chart version to check for
+        untar_chart (bool): Whether to check for untarred or tarred chart
+    
+    Returns:
+        bool: True if chart with matching version exists, False otherwise
     """
     # YAML is required for version checking
     if not HAS_YAML:
+        return False
+    
+    # Without version, we can't reliably check
+    if not chart_version:
         return False
     
     # Extract chart name from chart_ref (handle URLs and simple names)
@@ -241,11 +254,7 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
                 pass
     else:
         # Check for .tgz file
-        if chart_version:
-            chart_file = os.path.join(destination, f"{chart_name}-{chart_version}.tgz")
-        else:
-            # Without version, we can't reliably check
-            return False
+        chart_file = os.path.join(destination, f"{chart_name}-{chart_version}.tgz")
             
         if os.path.isfile(chart_file):
             try:
@@ -254,14 +263,16 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
                     # Try to extract Chart.yaml to verify version
                     # Look for Chart.yaml at the expected path: <chart-name>/Chart.yaml
                     expected_chart_yaml = f"{chart_name}/Chart.yaml"
-                    for member in tar.getmembers():
-                        if member.name == expected_chart_yaml:
-                            f = tar.extractfile(member)
-                            if f:
-                                chart_metadata = yaml.safe_load(f)
-                                if chart_metadata.get('version') == chart_version:
-                                    return True
-                            break
+                    try:
+                        member = tar.getmember(expected_chart_yaml)
+                        f = tar.extractfile(member)
+                        if f:
+                            chart_metadata = yaml.safe_load(f)
+                            if chart_metadata.get('version') == chart_version:
+                                return True
+                    except KeyError:
+                        # Chart.yaml not found at expected path
+                        pass
             except (tarfile.TarError, yaml.YAMLError, IOError, OSError):
                 # If we can't read or parse the tarball, treat as non-existent
                 pass
