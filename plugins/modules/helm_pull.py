@@ -235,6 +235,12 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
     
     # Extract chart name from chart_ref (handle URLs and simple names)
     chart_name = chart_ref.split('/')[-1]
+    # Remove any query parameters or fragments from URL-based refs first
+    if '?' in chart_name:
+        chart_name = chart_name.split('?')[0]
+    if '#' in chart_name:
+        chart_name = chart_name.split('#')[0]
+    # Remove .tgz extension if present
     if chart_name.endswith('.tgz'):
         chart_name = chart_name[:-4]
     
@@ -245,7 +251,7 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
         
         if os.path.isdir(chart_dir) and os.path.isfile(chart_yaml_path):
             try:
-                with open(chart_yaml_path, 'r') as chart_file:
+                with open(chart_yaml_path, 'r', encoding='utf-8') as chart_file:
                     chart_metadata = yaml.safe_load(chart_file)
                     if chart_metadata.get('version') == chart_version:
                         return True
@@ -267,9 +273,12 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
                         member = tar.getmember(expected_chart_yaml)
                         chart_yaml_file = tar.extractfile(member)
                         if chart_yaml_file:
-                            chart_metadata = yaml.safe_load(chart_yaml_file)
-                            if chart_metadata.get('version') == chart_version:
-                                return True
+                            try:
+                                chart_metadata = yaml.safe_load(chart_yaml_file)
+                                if chart_metadata.get('version') == chart_version:
+                                    return True
+                            finally:
+                                chart_yaml_file.close()
                     except KeyError:
                         # Chart.yaml not found at expected path
                         pass
