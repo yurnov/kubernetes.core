@@ -89,6 +89,12 @@ options:
     - if set to true, will untar the chart after downloading it.
     type: bool
     default: False
+  force:
+    description:
+    - Force download of the chart even if it already exists in the destination directory.
+    - By default, the module will skip downloading if the chart with the same version already exists.
+    type: bool
+    default: False
   destination:
     description:
     - location to write the chart.
@@ -152,6 +158,14 @@ EXAMPLES = r"""
     destination: /path/to/chart
     username: myuser
     password: mypassword123
+
+- name: Download Chart (force re-download even if exists)
+  kubernetes.core.helm_pull:
+    chart_ref: redis
+    repo_url: https://charts.bitnami.com/bitnami
+    chart_version: '17.0.0'
+    destination: /path/to/chart
+    force: yes
 """
 
 RETURN = r"""
@@ -177,12 +191,74 @@ rc:
   sample: 1
 """
 
+import os
+import tarfile
+
+try:
+    import yaml
+
+    HAS_YAML = True
+except ImportError:
+    HAS_YAML = False
+
 from ansible_collections.kubernetes.core.plugins.module_utils.helm import (
     AnsibleHelmModule,
 )
 from ansible_collections.kubernetes.core.plugins.module_utils.version import (
     LooseVersion,
 )
+
+
+def chart_exists(destination, chart_ref, chart_version, untar_chart):
+    """
+    Check if the chart already exists in the destination directory.
+    
+    For untarred charts: check if directory exists with Chart.yaml matching version
+    For tarred charts: check if .tgz file exists and contains matching version
+    """
+    # Extract chart name from chart_ref (handle URLs and simple names)
+    chart_name = chart_ref.split('/')[-1]
+    if chart_name.endswith('.tgz'):
+        chart_name = chart_name[:-4]
+    
+    if untar_chart:
+        # Check for extracted directory
+        chart_dir = os.path.join(destination, chart_name)
+        chart_yaml_path = os.path.join(chart_dir, 'Chart.yaml')
+        
+        if os.path.isdir(chart_dir) and os.path.isfile(chart_yaml_path):
+            try:
+                with open(chart_yaml_path, 'r') as f:
+                    chart_metadata = yaml.safe_load(f)
+                    if chart_metadata.get('version') == chart_version:
+                        return True
+            except Exception:
+                pass
+    else:
+        # Check for .tgz file
+        if chart_version:
+            chart_file = os.path.join(destination, f"{chart_name}-{chart_version}.tgz")
+        else:
+            # Without version, we can't reliably check
+            return False
+            
+        if os.path.isfile(chart_file):
+            try:
+                # Verify it's a valid tarball with matching version
+                with tarfile.open(chart_file, 'r:gz') as tar:
+                    # Try to extract Chart.yaml to verify version
+                    for member in tar.getmembers():
+                        if member.name.endswith('Chart.yaml'):
+                            f = tar.extractfile(member)
+                            if f:
+                                chart_metadata = yaml.safe_load(f)
+                                if chart_metadata.get('version') == chart_version:
+                                    return True
+                            break
+            except Exception:
+                pass
+    
+    return False
 
 
 def main():
@@ -203,6 +279,7 @@ def main():
         ),
         chart_devel=dict(type="bool"),
         untar_chart=dict(type="bool", default=False),
+        force=dict(type="bool", default=False),
         destination=dict(type="path", required=True),
         chart_ca_cert=dict(type="path"),
         chart_ssl_cert_file=dict(type="path"),
@@ -286,6 +363,28 @@ def main():
         module.params.get("chart_ref"),
         " ".join(helm_pull_opts),
     )
+    
+    # Check if chart already exists (idempotency)
+    chart_exists_locally = False
+    if module.params.get('chart_version') and not module.params.get('force'):
+        chart_exists_locally = chart_exists(
+            module.params.get('destination'),
+            module.params.get('chart_ref'),
+            module.params.get('chart_version'),
+            module.params.get('untar_chart')
+        )
+    
+    if chart_exists_locally:
+        module.exit_json(
+            failed=False,
+            changed=False,
+            msg="Chart already exists in destination directory",
+            command=helm_cmd_common,
+            stdout="",
+            stderr="",
+            rc=0,
+        )
+    
     if not module.check_mode:
         rc, out, err = module.run_helm_command(helm_cmd_common, fails_on_error=False)
     else:
