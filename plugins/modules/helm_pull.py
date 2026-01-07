@@ -92,9 +92,10 @@ options:
   force:
     description:
     - Force download of the chart even if it already exists in the destination directory.
-    - By default, the module will skip downloading if the chart with the same version already exists.
+    - By default, the module will skip downloading if the chart with the same version already exists for idempotency.
     type: bool
     default: False
+    version_added: 6.3.0
   destination:
     description:
     - location to write the chart.
@@ -212,27 +213,27 @@ from ansible_collections.kubernetes.core.plugins.module_utils.version import (
 def chart_exists(destination, chart_ref, chart_version, untar_chart):
     """
     Check if the chart already exists in the destination directory.
-    
+
     For untarred charts: check if directory exists with Chart.yaml matching version
     For tarred charts: check if .tgz file exists and contains matching version
-    
+
     Args:
         destination (str): Destination directory path
         chart_ref (str): Chart reference (name or URL)
         chart_version (str): Chart version to check for
         untar_chart (bool): Whether to check for untarred or tarred chart
-    
+
     Returns:
         bool: True if chart with matching version exists, False otherwise
     """
     # YAML is required for version checking
     if not HAS_YAML:
         return False
-    
+
     # Without version, we can't reliably check
     if not chart_version:
         return False
-    
+
     # Extract chart name from chart_ref (handle URLs and simple names)
     chart_name = chart_ref.split('/')[-1]
     # Remove any query parameters or fragments from URL-based refs first
@@ -243,19 +244,19 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
     # Remove .tgz extension if present
     if chart_name.endswith('.tgz'):
         chart_name = chart_name[:-4]
-    
+
     if untar_chart:
         # Check for extracted directory
         chart_dir = os.path.join(destination, chart_name)
         chart_yaml_path = os.path.join(chart_dir, 'Chart.yaml')
-        
+
         if os.path.isdir(chart_dir) and os.path.isfile(chart_yaml_path):
             try:
                 with open(chart_yaml_path, 'r', encoding='utf-8') as chart_file:
                     chart_metadata = yaml.safe_load(chart_file)
                     # Ensure chart_metadata is a dict and has a version that matches
-                    if (chart_metadata and 
-                        isinstance(chart_metadata, dict) and 
+                    if (chart_metadata and
+                        isinstance(chart_metadata, dict) and
                         chart_metadata.get('version') == chart_version):
                         return True
             except (yaml.YAMLError, IOError, OSError, TypeError):
@@ -264,7 +265,7 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
     else:
         # Check for .tgz file
         chart_file = os.path.join(destination, f"{chart_name}-{chart_version}.tgz")
-        
+
         if os.path.isfile(chart_file):
             try:
                 # Verify it's a valid tarball with matching version
@@ -279,8 +280,8 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
                             try:
                                 chart_metadata = yaml.safe_load(chart_yaml_file)
                                 # Ensure chart_metadata is a dict and has a version that matches
-                                if (chart_metadata and 
-                                    isinstance(chart_metadata, dict) and 
+                                if (chart_metadata and
+                                    isinstance(chart_metadata, dict) and
                                     chart_metadata.get('version') == chart_version):
                                     return True
                             except (yaml.YAMLError, TypeError):
@@ -294,7 +295,7 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
             except (tarfile.TarError, yaml.YAMLError, IOError, OSError, TypeError):
                 # If we can't read or parse the tarball, treat as non-existent
                 pass
-    
+
     return False
 
 
@@ -400,7 +401,7 @@ def main():
         module.params.get("chart_ref"),
         " ".join(helm_pull_opts),
     )
-    
+
     # Check if chart already exists (idempotency)
     if module.params.get('chart_version') and not module.params.get('force'):
         chart_exists_locally = chart_exists(
@@ -409,7 +410,7 @@ def main():
             module.params.get('chart_version'),
             module.params.get('untar_chart')
         )
-        
+
         if chart_exists_locally:
             module.exit_json(
                 failed=False,
@@ -423,7 +424,7 @@ def main():
                 stderr="",
                 rc=0,
             )
-    
+
     if not module.check_mode:
         rc, out, err = module.run_helm_command(helm_cmd_common, fails_on_error=False)
     else:
