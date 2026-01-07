@@ -253,9 +253,12 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
             try:
                 with open(chart_yaml_path, 'r', encoding='utf-8') as chart_file:
                     chart_metadata = yaml.safe_load(chart_file)
-                    if chart_metadata.get('version') == chart_version:
+                    # Ensure chart_metadata is a dict and has a version that matches
+                    if (chart_metadata and 
+                        isinstance(chart_metadata, dict) and 
+                        chart_metadata.get('version') == chart_version):
                         return True
-            except (yaml.YAMLError, IOError, OSError):
+            except (yaml.YAMLError, IOError, OSError, TypeError):
                 # If we can't read or parse the file, treat as non-existent
                 pass
     else:
@@ -275,14 +278,20 @@ def chart_exists(destination, chart_ref, chart_version, untar_chart):
                         if chart_yaml_file:
                             try:
                                 chart_metadata = yaml.safe_load(chart_yaml_file)
-                                if chart_metadata.get('version') == chart_version:
+                                # Ensure chart_metadata is a dict and has a version that matches
+                                if (chart_metadata and 
+                                    isinstance(chart_metadata, dict) and 
+                                    chart_metadata.get('version') == chart_version):
                                     return True
+                            except (yaml.YAMLError, TypeError):
+                                # If we can't parse the YAML, treat as non-existent
+                                pass
                             finally:
                                 chart_yaml_file.close()
                     except KeyError:
                         # Chart.yaml not found at expected path
                         pass
-            except (tarfile.TarError, yaml.YAMLError, IOError, OSError):
+            except (tarfile.TarError, yaml.YAMLError, IOError, OSError, TypeError):
                 # If we can't read or parse the tarball, treat as non-existent
                 pass
     
