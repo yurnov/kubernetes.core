@@ -59,7 +59,7 @@ options:
   keyring:
     description:
       - Location of public keys used for verification.
-      - Only valid with C(state=present), which maps to the C(helm plugin install) subcommand.
+      - Only valid with C(state=present), which maps to the C(helm plugin install) subcommand. It is ignored (with a warning) for any other state.
       - This option requires helm version >= 4.0.0.
     type: path
     required: false
@@ -195,11 +195,11 @@ def main():
 
     # The ``--keyring`` flag is only supported by the ``install``, ``verify`` and
     # ``package`` plugin subcommands. Of those, this module only implements
-    # ``install`` (state=present), so reject ``keyring`` for any other state.
+    # ``install`` (state=present), so ignore ``keyring`` for any other state.
     if module.params.get("keyring") is not None and state != "present":
-        module.fail_json(
-            msg="The 'keyring' option is only supported with state=present "
-            "(the 'helm plugin install' subcommand)."
+        module.warn(
+            "keyring parameter is only supported with state=present "
+            "(the 'helm plugin install' subcommand) and will be ignored."
         )
 
     helm_cmd_common = module.get_helm_binary() + " plugin"
